@@ -12,10 +12,10 @@ UPLOAD_DIR = "temp_audio"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ==========================================
-# إعدادات ElevenLabs (يجب تحديث هذه القيم)
+# إعدادات ElevenLabs (بتتقرأ من Environment Variables في Render)
 # ==========================================
-API_KEY = "ضع_المفتاح_الخاص_بك_هنا"
-VOICE_ID = "ضع_معرف_الصوت_هنا"
+API_KEY = os.environ.get("API_KEY")
+VOICE_ID = os.environ.get("VOICE_ID")
 
 @app.post("/convert-voice/")
 async def convert_voice(audio_file: UploadFile = File(...)):
@@ -33,7 +33,7 @@ async def convert_voice(audio_file: UploadFile = File(...)):
         "xi-api-key": API_KEY,
         "Accept": "audio/mpeg"
     }
-   
+
     # إعدادات لضمان نقل الانفعالات (كالضحك) بوضوح
     data = {
         "model_id": "eleven_multilingual_sts_v2",
@@ -48,18 +48,18 @@ async def convert_voice(audio_file: UploadFile = File(...)):
         # 3. حفظ النتيجة وتحويلها إلى صيغة Voice Note (OGG/Opus)
         temp_mp3 = f"{UPLOAD_DIR}/temp.mp3"
         final_ogg = f"{UPLOAD_DIR}/voice_note.ogg"
-       
+
         with open(temp_mp3, "wb") as f:
             f.write(response.content)
-           
+
         # استخدام pydub للتحويل إلى OGG
         audio = AudioSegment.from_file(temp_mp3)
         audio.export(final_ogg, format="ogg", codec="libopus", parameters=["-strict", "-2"])
-       
+
         # تنظيف الملفات المؤقتة لتوفير المساحة
         os.remove(temp_mp3)
         os.remove(input_path)
-       
+
         return FileResponse(final_ogg, media_type="audio/ogg", filename="voicenote.ogg")
     else:
         return {"error": "فشل التحويل في ElevenLabs", "details": response.text}
